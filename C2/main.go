@@ -63,6 +63,7 @@ func main() {
 		core.Log.Fatalln("[!] CHECK IF MYSQL SERVER IS ONLINE! [!]")
 	}
 	core.Log.Println("SQL Connection Good...")
+	core.AutoSetupDB()
 	decodedKey, _ := base64.RawURLEncoding.DecodeString(core.GetSpecificSQL("settings", "Value", "Name", "EncryptionKey"))
 	core.EncryptionPassword = string(decodedKey)
 	decodedUA, _ := base64.RawURLEncoding.DecodeString(core.GetSpecificSQL("settings", "Value", "Name", "UserAgent"))

