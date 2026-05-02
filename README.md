@@ -60,6 +60,14 @@ Le serveur permet d'exécuter une vaste gamme de tâches sur les agents :
 *   **Info Gathering** : Collecte détaillée de la configuration matérielle, logicielle et réseau.
 *   **Torrent Seeding** : Utilisation de la bande passante pour le partage de fichiers.
 
+## 🛠️ Outils Inclus (Tools)
+
+Le framework est accompagné d'une suite d'outils pour faciliter le déploiement et l'évasion :
+*   **Linux Fileless Injector** : Télécharge et exécute un binaire directement en RAM via `memfd_create` (furtivité totale, pas de traces sur le disque).
+*   **File Size Pumper** : Augmente artificiellement la taille des binaires pour contourner les scanners antivirus.
+*   **Command Decoder** : Utilitaire pour déchiffrer manuellement les communications entre les agents et le C2.
+*   **Socks5 Client** : Transforme n'importe quel agent en relais Socks5 pour le pivotement réseau.
+
 ---
 
 ## 📦 Installation et Compilation
