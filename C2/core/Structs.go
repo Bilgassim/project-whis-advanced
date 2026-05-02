@@ -164,6 +164,14 @@ type ManagePage struct {
 	Name     string
 	Username string
 
+	TotalClients      string
+	ActiveClients     string
+	StolenFiles       string
+	StolenCredentials string
+
+	UID              string
+	IP               string
+	OS               string
 	ClientUID        string
 	ClientVersion    string
 	ClientScreenshot string
@@ -171,8 +179,12 @@ type ManagePage struct {
 	ClientWebcam     string
 	WebcamDate       string
 	ClientInfo       string
+	AntiVirus        string
+	LastResponse     string
+	Notes            string
 	AdminNotes       string
 	GPU              string
+	Abilities        string
 	Upload           string
 	Download         string
 	FirstSeen        string

