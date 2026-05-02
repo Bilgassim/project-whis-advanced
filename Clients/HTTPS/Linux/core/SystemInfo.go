@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"os"
 	"runtime"
@@ -11,12 +12,23 @@ import (
 
 func MachineID() string {
 	if runtime.GOOS == "linux" {
-		id, err := ioutil.ReadFile("/var/lib/dbus/machine-id")
+		// Standard paths
+		id, err := os.ReadFile("/var/lib/dbus/machine-id")
 		if err != nil {
-			id, err = ioutil.ReadFile("/etc/machine-id")
+			id, err = os.ReadFile("/etc/machine-id")
 		}
+		// Fallback for BusyBox/Minimal systems without machine-id
 		if err != nil {
-			return "ERROR"
+			// Try to get first MAC address as ID
+			ifas, _ := net.Interfaces()
+			for _, ifa := range ifas {
+				if ifa.HardwareAddr.String() != "" {
+					return MD5Hash(ifa.HardwareAddr.String())
+				}
+			}
+			// Last resort: Hostname
+			host, _ := os.Hostname()
+			return MD5Hash(host)
 		}
 		return strings.TrimSpace(strings.Trim(string(id), "\n"))
 	} else if runtime.GOOS == "darwin" {
@@ -46,10 +58,7 @@ func MachineID() string {
 }
 
 func isRoot() bool {
-	root := true
-	u, _ := RunCmd("whoami")
-	root = (strings.TrimSuffix(u, "\n") == "root")
-	return root
+	return os.Geteuid() == 0
 }
 
 func extractID(lines string) string {

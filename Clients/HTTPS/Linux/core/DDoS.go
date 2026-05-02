@@ -113,7 +113,7 @@ func RawIPv4Header(p *IPv4Header) []byte {
 
 func getIPv4Header(dstIP net.IP) []byte {
 	srcIP := net.IP(make([]byte, 4))
-	binary.BigEndian.PutUint32(srcIP[0:4], uint32(rand.Intn(1<<32-1)))
+	binary.BigEndian.PutUint32(srcIP[0:4], uint32(rand.Int31()))
 	ipv4Hdr := &IPv4Header{
 		ID:       1,
 		TTL:      255,
@@ -131,7 +131,7 @@ func getTCPHeader(dstPort int) []byte {
 	tcpHdr := &TCPHeader{
 		Src:  rand.Intn(1<<16-1)%16383 + 49152,
 		Dst:  dstPort,
-		Seq:  rand.Intn(1<<32 - 1),
+		Seq:  int(rand.Int31()),
 		Ack:  0,
 		Flag: 0x02, // SYN flag
 		Win:  2048,

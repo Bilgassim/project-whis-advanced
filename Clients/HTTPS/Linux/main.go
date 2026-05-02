@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"project-whis-linux/core"
 	"time"
 )
 
