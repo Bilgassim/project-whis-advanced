@@ -1,17 +1,13 @@
 package core
 
 import (
-	"bytes"
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
-	"io"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 )

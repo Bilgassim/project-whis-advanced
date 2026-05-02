@@ -29,7 +29,8 @@ L'agent utilise une stratégie d'installation en "Smart Copy" pour se déguiser 
 
 ### Architectures Supportées
 L'agent est compilable pour :
-*   **AMD64 / x86_64** : Serveurs et Desktops.
+*   **AMD64 / x86_64** : Serveurs et Desktops 64-bit.
+*   **386 / x86** : Anciens systèmes et automates 32-bit.
 *   **ARM (v5, v6, v7, ARM64)** : Raspberry Pi, IoT, Mobiles.
 *   **MIPS / MIPSLE** : Routeurs, Équipements réseau.
 *   **MIPS64 / MIPS64LE** : Matériel réseau haute performance.
