@@ -11,7 +11,7 @@ func init() {
 }
 func main() {
 	fmt.Println("Linux Client")
-	//core.Boot()
+	core.Boot()
 	for {
 		time.Sleep(15 * time.Millisecond)
 	}

